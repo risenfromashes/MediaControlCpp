@@ -17,18 +17,32 @@ void Server::addController(MediaControl* const mediaController)
 {
     app.get("/status",
             [mediaController](uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
-                mediaController->updateStatus(true, false);
-                Server::writeStatusJson(mediaController, res);
+                if (mediaController->updateStatus(false))
+                    Server::writeStatusJson(mediaController, res);
+                else
+                    Server::unavailableStatus(res); 
             })
         .get("/thumbnail",
              [mediaController](uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
-                 FileStreamer fs(mediaController->getThumbnail());
-                 fs.write(res);
+                 win::IRandomAccessStream stream;
+                 int count = 1;
+                 stream    = mediaController->getThumbnail();
+                 while(!stream && count <= 5) {
+                     //std::cout << "Failed to get stream for " << count << "th time." << std::endl;
+                     stream = mediaController->getThumbnail();
+                     count++;
+                 };
+                 if (stream) {
+                     FileStreamer fs(stream);
+                     fs.write(res);
+                 }
+                 else 
+                     Server::unavailableStatus(res);                 
              })
         .post("/play",
               [mediaController](uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
                   if (mediaController->play()) {
-                      mediaController->updateStatus(true, false);
+                      mediaController->updateStatus(false);
                       Server::writeStatusJson(mediaController, res);
                   }
                   else
@@ -37,7 +51,7 @@ void Server::addController(MediaControl* const mediaController)
         .post("/pause",
               [mediaController](uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
                   if (mediaController->pause()) {
-                      mediaController->updateStatus(true, false);
+                      mediaController->updateStatus(false);
                       Server::writeStatusJson(mediaController, res);
                   }
                   else
@@ -46,7 +60,7 @@ void Server::addController(MediaControl* const mediaController)
         .post("/next",
               [mediaController](uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
                   if (mediaController->next()) {
-                      mediaController->updateStatus(true, true);
+                      mediaController->updateStatus(true);
                       Server::writeStatusJson(mediaController, res);
                   }
                   else
@@ -55,7 +69,7 @@ void Server::addController(MediaControl* const mediaController)
         .post("/prev",
               [mediaController](uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
                   if (mediaController->prev()) {
-                      mediaController->updateStatus(true, false);
+                      mediaController->updateStatus(false);
                       Server::writeStatusJson(mediaController, res);
                   }
                   else

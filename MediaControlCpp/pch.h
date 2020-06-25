@@ -13,6 +13,7 @@
 
 namespace win {
 using namespace winrt;
+using namespace winrt::Windows::Media;
 using namespace winrt::Windows::Storage::Streams;
 using namespace winrt::Windows::Media::Control;
 using namespace winrt::Windows::Foundation;

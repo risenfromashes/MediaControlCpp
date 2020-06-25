@@ -9,7 +9,7 @@
 
 class MediaControl {
   private:
-    win::GlobalSystemMediaTransportControlsSessionManager         sessionManager;
+    win::GlobalSystemMediaTransportControlsSessionManager         sessionManager{nullptr};
     win::GlobalSystemMediaTransportControlsSessionMediaProperties currentTrack{nullptr};
     win::GlobalSystemMediaTransportControlsSession                currentSession{nullptr};
     MediaControlStatus                                            status;
@@ -21,7 +21,7 @@ class MediaControl {
   public:
     MediaControl(HWND handle);
     win::GlobalSystemMediaTransportControlsSession updateSession();
-    void                              updateStatus(bool shouldUpdateSession = false, bool waitForNewTrack = false);
+    bool                              updateStatus(bool waitForNewTrack = false);
     bool                              play();
     bool                              pause();
     bool                              prev();

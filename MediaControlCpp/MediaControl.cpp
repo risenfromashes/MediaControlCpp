@@ -9,18 +9,21 @@ bool MediaControl::isSameTrack(win::GlobalSystemMediaTransportControlsSessionMed
 }
 
 MediaControl::MediaControl(HWND handle)
-    : handle(handle), sessionManager(win::GlobalSystemMediaTransportControlsSessionManager::RequestAsync().get())
+    : handle(handle)
 {
+    sessionManager = win::GlobalSystemMediaTransportControlsSessionManager::RequestAsync().get();
     updateSession();
 }
 win::GlobalSystemMediaTransportControlsSession MediaControl::updateSession()
 {
+    if (sessionManager.GetSessions().Size() == 0)
+        sessionManager = win::GlobalSystemMediaTransportControlsSessionManager::RequestAsync().get();
     currentSession = sessionManager.GetCurrentSession();
     return currentSession;
 }
-void MediaControl::updateStatus(bool shouldUpdateSession, bool waitForNewTrack)
+bool MediaControl::updateStatus(bool waitForNewTrack)
 {
-    if (shouldUpdateSession) updateSession();
+    if (!updateSession()) return false;
     win::GlobalSystemMediaTransportControlsSessionMediaProperties track{nullptr};
     do {
         track = currentSession.TryGetMediaPropertiesAsync().get();
@@ -31,31 +34,40 @@ void MediaControl::updateStatus(bool shouldUpdateSession, bool waitForNewTrack)
         std::lock_guard<std::mutex> lock(status_mutex);
         status.update(currentTrack, currentSession.GetPlaybackInfo());
     }
+    return true;
 }
 bool MediaControl::play()
 {
-    updateSession();
+    if (!updateSession()) return false;
     return currentSession.TryPlayAsync().get();
 }
 bool MediaControl::pause()
 {
-    updateSession();
+    if (!updateSession()) return false;
     return currentSession.TryPauseAsync().get();
 }
 bool MediaControl::prev()
 {
-    updateSession();
+    if (!updateSession()) return false;
     return currentSession.TrySkipPreviousAsync().get();
 }
 bool MediaControl::next()
 {
-    updateSession();
+    if (!updateSession()) return false;
     return currentSession.TrySkipNextAsync().get();
 }
 win::IRandomAccessStream MediaControl::getThumbnail()
 {
     std::lock_guard<std::mutex> lock(status_mutex);
-    return status.thumbnail.OpenReadAsync().get().as<win::IRandomAccessStream>();
+    win::IRandomAccessStream    stream;
+    if (!status.thumbnail) return nullptr;
+    try {        
+        stream = status.thumbnail.OpenReadAsync().get().as<win::IRandomAccessStream>();
+    }
+    catch (...) {
+        stream = nullptr;
+    }
+    return stream;
 }
 std::string MediaControl::getStatusJson()
 {

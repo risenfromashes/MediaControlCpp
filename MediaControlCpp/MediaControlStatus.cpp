@@ -14,6 +14,10 @@ std::string MediaControlStatus::stringify()
     writer.String(album.c_str(), album.size());
     writer.String(L"playing");
     writer.Bool(isPlaying);
+    writer.String(L"duration");
+    writer.Int(duration);
+    writer.String(L"position");
+    writer.Int(position);
     writer.EndObject();
     return sb.GetString();
 }

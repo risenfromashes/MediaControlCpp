@@ -37,7 +37,7 @@ void FileStreamer::write(uWS::HttpResponse<false>* res)
     res->writeHeader("Content-Type", "image/jpeg");
     std::string_view cache(buffer + offset - buffer_offset, (size_t)buffer_end - offset);
     if (res->tryEnd(cache, file_size).first) { 
-        std::cout << "Write succeeded" << std::endl;
+        //std::cout << "Write succeeded" << std::endl;
     }
     else {
         std::cout << "Request didn't end" << std::endl;
